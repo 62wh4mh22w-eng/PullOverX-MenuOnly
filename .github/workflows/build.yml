@@ -14,8 +14,11 @@ jobs:
       - name: Install theos
         run: |
           export THEOS=$HOME/theos
-          git clone --recursive --depth 1 https://github.com/theos/theos.git $THEOS
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          cd $THEOS && git submodule update --init --recursive
           echo "THEOS=$THEOS" >> $GITHUB_ENV
+          echo "== theos vendor/include =="
+          ls $THEOS/vendor/include 2>/dev/null | head -20
 
       - name: Link Xcode SDK into theos
         run: |
@@ -34,7 +37,9 @@ jobs:
       - name: Build
         run: |
           chmod +x build.sh
-          ./build.sh roothide release 2>&1 | tail -80
+          export THEOS=$HOME/theos
+          ls $THEOS/vendor/include/Preferences 2>/dev/null || echo "no Preferences header"
+          ./build.sh roothide release 2>&1 | tail -100
 
       - name: List artifacts
         if: always()
