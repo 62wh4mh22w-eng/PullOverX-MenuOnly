@@ -16,6 +16,8 @@ jobs:
           export THEOS=$HOME/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
           cd $THEOS && git submodule update --init --recursive
+          sudo mkdir -p /opt
+          sudo ln -sfn "$THEOS" /opt/theos
           echo "THEOS=$THEOS" >> $GITHUB_ENV
           echo "== theos vendor/include =="
           ls $THEOS/vendor/include 2>/dev/null | head -20
@@ -38,7 +40,7 @@ jobs:
         run: |
           chmod +x build.sh
           export THEOS=$HOME/theos
-          ls $THEOS/vendor/include/Preferences 2>/dev/null || echo "no Preferences header"
+          ls /opt/theos/vendor/include/Preferences/ 2>/dev/null | head -5 || echo "ERROR: no Preferences header"
           ./build.sh roothide release 2>&1 | tail -100
 
       - name: List artifacts
