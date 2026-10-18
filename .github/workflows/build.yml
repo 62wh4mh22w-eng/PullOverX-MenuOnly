@@ -14,30 +14,31 @@ jobs:
       - name: Install theos
         run: |
           export THEOS=$HOME/theos
-          sudo git clone --recursive https://github.com/theos/theos.git $THEOS
-          sudo chown -R $(id -u):$(id -g) $THEOS
-          mkdir -p $THEOS/sdks
-          curl -L -o /tmp/sdk.tar.xz "https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz"
-          tar xf /tmp/sdk.tar.xz -C $THEOS/sdks
+          git clone --recursive --depth 1 https://github.com/theos/theos.git $THEOS
           echo "THEOS=$THEOS" >> $GITHUB_ENV
-          echo "THEOS_PACKAGE_SCHEME=roothide" >> $GITHUB_ENV
+
+      - name: Link Xcode SDK into theos
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          VERSION=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "Xcode SDK: $SDK (iOS $VERSION)"
+          mkdir -p $THEOS/sdks
+          ln -sfn "$SDK" "$THEOS/sdks/iPhoneOS${VERSION}.sdk"
+          ls -la $THEOS/sdks/
 
       - name: Install tools
         run: |
-          brew install ldid dpkg make || true
+          brew install ldid dpkg || true
           echo "$(brew --prefix dpkg)/bin" >> $GITHUB_PATH || true
-          echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH || true
 
       - name: Build
         run: |
           chmod +x build.sh
-          sudo ROOTLESS=1 ./build.sh roothide release 2>&1 | tail -60
+          ./build.sh roothide release 2>&1 | tail -80
 
-      - name: Collect artifacts
+      - name: List artifacts
         if: always()
-        run: |
-          echo "=== searching deb ==="
-          find . -name "*.deb" -o -name "*.dylib" | head -20
+        run: find . -name "*.deb" | head -10
 
       - uses: actions/upload-artifact@v4
         if: always()
